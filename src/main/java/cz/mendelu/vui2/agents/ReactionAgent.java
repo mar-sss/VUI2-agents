@@ -25,22 +25,26 @@ public class ReactionAgent extends AbstractAgent {
         if(!goBack && battery <= ((initBattery/2)+2)){ //+2 because of rotation!
             goBack = true;
             reverseActions();
-            if(getLastAction() == 'F'){ //if yes, make a rotation = 2 rotations
-                actionList.append('L');
-                actionList.append('L');
-            }
 
             // if last action was rotation, then continue with the same rotation again to be in the correcct direction
             // why replace = because we have reversed actions!
             if(getLastAction() == 'R'){
-                actionList.replace(actionList.length()-1, actionList.length(),"L");
+                actionList.setCharAt(actionList.length()-1, 'L');
+                //actionList.replace(actionList.length()-1, actionList.length(),"L");
             } else if(getLastAction() == 'L'){
-                actionList.replace(actionList.length()-1, actionList.length(),"R");
+                actionList.setCharAt(actionList.length()-1, 'R');
+                //actionList.replace(actionList.length()-1, actionList.length(),"R");
+            } else if(getLastAction() == 'F'){ //if yes, make a rotation = 2 rotations
+                actionList.append('L');
+                actionList.append('L');
             }
         }
 
         if (goBack){
-            char action = actionList.toString().charAt(0);
+            if (actionList.length() == 0){
+                return Action.TURN_OFF;
+            }
+            char action = actionList.toString().charAt(actionList.length()-1);
             actionList.deleteCharAt(actionList.length()-1);
             switch (action){
                 case 'F': return Action.FORWARD;
