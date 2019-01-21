@@ -73,15 +73,15 @@ public class ReactionAgent extends AbstractAgent {
             }
         }
 
-        // exit the task, I am in the dock again
-        //if (firstAction && dock){
-        //    actionList.append("D");
-        //    return Action.TURN_OFF;
-        //}
+        //exit the task, I am in the dock again
+        if (firstAction && dock){
+            actionList.append("D");
+            return Action.TURN_OFF;
+        }
 
         // clean the dirt if there is some
         if(dirty){
-            //actionList.append("C");
+            actionList.append("C");
             return Action.CLEAN;
         }
 
