@@ -10,18 +10,21 @@ public class ReactionAgent extends AbstractAgent {
     private boolean firstAction = false;
 
     private StringBuilder actionList = new StringBuilder();
-    private int initBattery = 1000;
+    private int initBattery = 1000; // try 100 and 10000
     private int battery = initBattery;
     private boolean goBack = false;
+    private int numberOfSteps; // indicates number of steps in rotation of 180 dgr. or in changing the direction
+    private boolean changingDirection; // indicates if the robot is in changing direction state
+    private boolean isFacingNorth; // it indicates in which direction is moving (because of rotations near walls)
 
     @Override
     public Action doAction(boolean canMove, boolean dirty, boolean dock) {
-        if(canMove){
+        if(canMove){ // just for better interpretation
             canMove = false;
         } else{
             canMove = true;
         }
-        battery--;
+        battery--; // I will do some move
         if(!goBack && battery <= ((initBattery/2)+2)){ //+2 because of rotation!
             goBack = true;
             reverseActions();
@@ -39,7 +42,7 @@ public class ReactionAgent extends AbstractAgent {
                 actionList.append('L');
             }
         }
-
+        // if I have order to go back, I will do all moves from actionList
         if (goBack){
             if (actionList.length() == 0){
                 return Action.TURN_OFF;
@@ -66,6 +69,9 @@ public class ReactionAgent extends AbstractAgent {
             if(canMove) { // if I can move from dock, go forward
                 firstAction = true; // this was my first move
                 actionList.append("F");
+                numberOfSteps = 0;
+                changingDirection = false;
+                isFacingNorth = true;
                 return Action.FORWARD;
             } else{ //if I can't move at the beginning, let rotate right
                 actionList.append("R");
@@ -74,16 +80,83 @@ public class ReactionAgent extends AbstractAgent {
         }
 
         //exit the task, I am in the dock again
-        if (firstAction && dock){
-            actionList.append("D");
-            return Action.TURN_OFF;
-        }
+        //if (dock){
+        //    actionList.append("D");
+        //    return Action.TURN_OFF;
+        //}
 
         // clean the dirt if there is some
         if(dirty){
             actionList.append("C");
             return Action.CLEAN;
         }
+
+        if(canMove && numberOfSteps == 0){ // I can move, so I go forward
+            actionList.append("F");
+            return Action.FORWARD;
+        } else{ // I can't move, there is wall in front of me
+            switch (numberOfSteps){ // I want to rotate by 180 degrees and move again
+                case 0: // this will be first rotation
+                    numberOfSteps++;
+                    if(isFacingNorth){
+                        actionList.append("R");
+                        return Action.TURN_RIGHT;
+                    } else{
+                        actionList.append("L");
+                        return Action.TURN_LEFT;
+                    }
+                case 1:
+                    if(canMove && !changingDirection){
+                        numberOfSteps++;
+                        actionList.append("F");
+                        return Action.FORWARD;
+                    }else if (canMove){
+                        numberOfSteps = 0;
+                        changingDirection = false;
+                        reverseDirection();
+                        actionList.append("F");
+                        return Action.FORWARD;
+                    }
+                    else{
+                        changingDirection = true;
+                        if(isFacingNorth){
+                            actionList.append("L");
+                            return Action.TURN_LEFT;
+                        }else{
+                            actionList.append("R");
+                            return Action.TURN_RIGHT;
+                        }
+
+                    }
+                case 2:
+                    numberOfSteps++;
+                    if(isFacingNorth){
+                        actionList.append("R");
+                        return Action.TURN_RIGHT;
+                    }else{
+                        actionList.append("L");
+                        return Action.TURN_LEFT;
+                    }
+                case 3:
+                    if(canMove){
+                        numberOfSteps = 0;
+                        reverseDirection();
+                        actionList.append("F");
+                        return Action.FORWARD;
+                    } else{ // I am trying to find first free cell
+                        if (isFacingNorth){
+                            actionList.append("R");
+                            return Action.TURN_RIGHT;
+                        }else{
+                            actionList.append("L");
+                            return Action.TURN_LEFT;
+                        }
+                    }
+                default: return Action.TURN_OFF; // this should not happen
+            }
+        }
+
+        /*
 
         if(canMove){ // (canMove && !dirty)
             if(actionList.substring(actionList.length()-1,actionList.length()).equals("F")){ // previous action = forward?
@@ -111,6 +184,7 @@ public class ReactionAgent extends AbstractAgent {
             actionList.append("L");
             return Action.TURN_LEFT;
         }
+     */
     }
 
     private char getLastRotation(){
@@ -138,25 +212,11 @@ public class ReactionAgent extends AbstractAgent {
 
     }
 
-    public static void main(String [ ] args)
-    {
-        ReactionAgent reactionAgent =  new ReactionAgent();
-        reactionAgent.doAction(true, false, false);
-        reactionAgent.doAction(true, false, false);
-        reactionAgent.doAction(true, false, false);
-        reactionAgent.doAction(true, false, false);
-        reactionAgent.doAction(true, false, false);
-        reactionAgent.doAction(true, false, false);
-        reactionAgent.doAction(true, false, false);
-        reactionAgent.doAction(true, false, false);
-        reactionAgent.doAction(true, false, false);
-        reactionAgent.doAction(true, false, false);
-        reactionAgent.doAction(false, false, false);
-        reactionAgent.doAction(false, false, false);
-        reactionAgent.doAction(false, false, false);
-        reactionAgent.doAction(false, false, false);
-        reactionAgent.doAction(false, false, false);
-        reactionAgent.doAction(true, false, false);
+    private void reverseDirection(){
+        if (isFacingNorth){
+            isFacingNorth = false;
+        }else{
+            isFacingNorth = true;
+        }
     }
-
 }
