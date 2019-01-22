@@ -7,15 +7,25 @@ import java.util.regex.Pattern;
 
 public class ReactionAgent extends AbstractAgent {
 
-    private boolean firstAction = false;
+    protected boolean firstAction;
 
-    private StringBuilder actionList = new StringBuilder();
-    private int initBattery = 1000; // try 100 and 10000
-    private int battery = initBattery;
-    private boolean goBack = false;
-    private int numberOfSteps; // indicates number of steps in rotation of 180 dgr. or in changing the direction
-    private boolean changingDirection; // indicates if the robot is in changing direction state
-    private boolean isFacingNorth; // it indicates in which direction is moving (because of rotations near walls)
+    protected StringBuilder actionList;
+    //protected int battery;
+    protected boolean goBack;
+    protected int numberOfSteps; // indicates number of steps in rotation of 180 dgr. or in changing the direction
+    protected boolean changingDirection; // indicates if the robot is in changing direction state
+    protected boolean isFacingNorth; // it indicates in which direction is moving (because of rotations near walls)
+
+    public ReactionAgent() {
+        super();
+        //this.battery = timeToSimulation;
+        this.firstAction = false;
+        this.actionList = new StringBuilder();
+        this.goBack = false;
+        this.numberOfSteps = 0;
+        this.changingDirection = false;
+        this.isFacingNorth = true;
+    }
 
     @Override
     public Action doAction(boolean canMove, boolean dirty, boolean dock) {
@@ -24,8 +34,8 @@ public class ReactionAgent extends AbstractAgent {
         } else{
             canMove = true;
         }
-        battery--; // I will do some move
-        if(!goBack && battery <= ((initBattery/2)+2)){ //+2 because of rotation!
+        timeToSimulation--; // I will do some move
+        if(!goBack && timeToSimulation <= ((actionList.length())+4)){ //+4 because of rotation and turning off!
             goBack = true;
             reverseActions();
 
@@ -69,9 +79,6 @@ public class ReactionAgent extends AbstractAgent {
             if(canMove) { // if I can move from dock, go forward
                 firstAction = true; // this was my first move
                 actionList.append("F");
-                numberOfSteps = 0;
-                changingDirection = false;
-                isFacingNorth = true;
                 return Action.FORWARD;
             } else{ //if I can't move at the beginning, let rotate right
                 actionList.append("R");
@@ -196,11 +203,11 @@ public class ReactionAgent extends AbstractAgent {
     }
 
 
-    private char getLastAction(){
+    protected char getLastAction(){
         return actionList.substring(actionList.length()-1,actionList.length()).toCharArray()[0];
     }
 
-    private void reverseActions(){
+    protected void reverseActions(){
         String s = actionList.toString().replaceAll("R","l").replaceAll("L","r").replaceAll("l","L").replaceAll("r","R");
         actionList = new StringBuilder(s);
 
@@ -210,7 +217,7 @@ public class ReactionAgent extends AbstractAgent {
 
     }
 
-    private void reverseDirection(){
+    protected void reverseDirection(){
         if (isFacingNorth){
             isFacingNorth = false;
         }else{
