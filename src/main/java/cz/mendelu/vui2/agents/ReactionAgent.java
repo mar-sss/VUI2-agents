@@ -79,15 +79,13 @@ public class ReactionAgent extends AbstractAgent {
             }
         }
 
-        //exit the task, I am in the dock again
-        //if (dock){
-        //    actionList.append("D");
-        //    return Action.TURN_OFF;
-        //}
+        //I am in the dock again, so I can remove content in action list
+        if (dock){
+            actionList = new StringBuilder();
+        }
 
         // clean the dirt if there is some
         if(dirty){
-            actionList.append("C");
             return Action.CLEAN;
         }
 
