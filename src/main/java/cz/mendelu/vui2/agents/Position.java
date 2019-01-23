@@ -8,9 +8,16 @@ public class Position {
     private int x;
     private int y;
 
+    private double hScore;
+    private double fScore;
+    Position parent;
+
     public Position(int x, int y) {
         this.x = x;
         this.y = y;
+        hScore = 0;
+        fScore = 0;
+        parent = null;
     }
 
     @Override
@@ -51,5 +58,29 @@ public class Position {
                 "x=" + x +
                 ", y=" + y +
                 '}';
+    }
+
+    public double gethScore() {
+        return hScore;
+    }
+
+    public void sethScore(double hScore) {
+        this.hScore = hScore;
+    }
+
+    public double getfScore() {
+        return fScore;
+    }
+
+    public void setfScore(double fScore) {
+        this.fScore = fScore;
+    }
+
+    public Position getParent() {
+        return parent;
+    }
+
+    public void setParent(Position parent) {
+        this.parent = parent;
     }
 }

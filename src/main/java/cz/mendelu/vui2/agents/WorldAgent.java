@@ -1,14 +1,22 @@
 package cz.mendelu.vui2.agents;
 
-import java.util.HashMap;
+import javafx.geometry.Pos;
+
+import java.util.*;
+
+import static java.lang.Math.abs;
+import static java.lang.Math.pow;
+import static java.lang.Math.sqrt;
 
 public class WorldAgent extends ReactionAgent {
 
-    private HashMap<Position, Content> world;
+    protected HashMap<Position, Content> world;
 
-    Position actualPosition;
+    protected Position actualPosition;
 
-    private WorldDirection worldDirection;
+    protected WorldDirection worldDirection;
+
+    protected StringBuilder pathToHome;
 
     public WorldAgent() {
         super();
@@ -16,55 +24,64 @@ public class WorldAgent extends ReactionAgent {
         this.actualPosition = new Position(0,0);
         this.worldDirection = WorldDirection.N;
         this.world.put(actualPosition, Content.DOCK);
+        this.pathToHome = new StringBuilder();
     }
 
     @SuppressWarnings("Duplicates")
     @Override
     public Action doAction(boolean canMove, boolean dirty, boolean dock) {
         printWorld();
-        if(canMove){ // just for better interpretation
-            canMove = false;
-        } else{
-            canMove = true;
-        }
-        timeToSimulation--; // I will do some move
-        if(!goBack && timeToSimulation <= ((actionList.length())+4)){ //+4 because of rotation and turning off!
-            goBack = true;
-            reverseActions();
+        //ArrayList<Position> pathToDock = AStarFindWay(actualPosition, new Position(0,0));
+        //System.out.println("Path to dock: " + pathToDock);
+        //AStarFindWay(actualPosition, getDock()); // from actual position to dock
+        //System.out.println(makeMovesFromAToB(actualPosition, getDock()));
+        //previously printPath -- getPathAsPositionArray(getDock());
 
-            // if last action was rotation, then continue with the same rotation again to be in the correcct direction
-            // why replace = because we have reversed actions!
-            if(getLastAction() == 'R'){
-                actionList.setCharAt(actionList.length()-1, 'L');
-                //actionList.replace(actionList.length()-1, actionList.length(),"L");
-            } else if(getLastAction() == 'L'){
-                actionList.setCharAt(actionList.length()-1, 'R');
-                //actionList.replace(actionList.length()-1, actionList.length(),"R");
-            } else if(getLastAction() == 'F'){ //if yes, make a rotation = 2 rotations
-                actionList.append('L');
-                actionList.append('L');
+        canMove = !canMove;
+        if (!goBack && !dock){// If I am going already back or I am in dock, no needed for home path cost calculation
+            //calculate cost to home
+            pathToHome = makeMovesFromAToB(actualPosition, getDock());
+            //append correct rotation to the first neighbor
+            ArrayList<Position> pathToHomeAsArray = getPathAsPositionArray(getDock());
+            Position firstNeighbor = pathToHomeAsArray.remove(1);
+            WorldDirection worldDirectionToNeighbor = getWDToNeighbor(actualPosition, firstNeighbor);
+            int turns = 0;
+            WorldDirection originWD = worldDirection;
+            while (worldDirectionToNeighbor != null && worldDirection != worldDirectionToNeighbor) {
+                turnRight();
+                turns++;
             }
+            if (turns == 3) { //if it was needed 3x rotation to get right direction, just rotate left
+                pathToHome.append("L");
+            } else {
+                for (int i = 0; i < turns; i++) {
+                    pathToHome.append("R");
+                }
+            }
+            worldDirection = originWD; //I used worldDirection for calculation of rotations, but I dont want to change it
         }
+        System.out.println(pathToHome + " Cost: " + pathToHome.length());
+        timeToSimulation--; // I will do some move
+        if((!goBack) && (timeToSimulation <=pathToHome.length()+3)){ //+3 because of turn off and rotations!
+            goBack = true;
+        }
+
         // if I have order to go back, I will do all moves from actionList
         if (goBack){
-            if (actionList.length() == 0){
-                printWorld();
+            if (pathToHome.length() == 0){
                 return Action.TURN_OFF;
             }
-            char action = actionList.toString().charAt(actionList.length()-1);
-            actionList.deleteCharAt(actionList.length()-1);
-            switch (action){
+            char action = pathToHome.toString().charAt(pathToHome.length()-1);
+            pathToHome.deleteCharAt(pathToHome.length()-1);
+            switch (action){ //just make actions as are in pathToHome
                 case 'F':
-                    updateActualPosition();
+                    //updateActualPosition();
                     return Action.FORWARD;
                 case 'R': return Action.TURN_RIGHT;
                 case 'L': return Action.TURN_LEFT;
                 default: return Action.TURN_OFF;
             }
-
         }
-
-
 
         // if it is the first action of the agent, let leave the dock
         if(!firstAction){
@@ -80,12 +97,6 @@ public class WorldAgent extends ReactionAgent {
                 return turnRight();
             }
         }
-
-        //exit the task, I am in the dock again
-        //if (dock){
-        //    actionList.append("D");
-        //    return Action.TURN_OFF;
-        //}
 
         // clean the dirt if there is some
         if(dirty){
@@ -160,13 +171,13 @@ public class WorldAgent extends ReactionAgent {
 
     }
 
-    private void printWorld(){ // print the world as a 2D matrix
+    protected void printWorld(){ // print the world as a 2D matrix
         int minX = 0;
         int maxX = 0;
         int minY = 0;
         int maxY = 0;
 
-        System.out.println(world);
+        //System.out.println(world);
 
         //getting minimum and maximum x, y
         for (Position pos: world.keySet()){
@@ -183,12 +194,22 @@ public class WorldAgent extends ReactionAgent {
                 maxY = pos.getY();
             }
         }
+        System.out.print("  "); // for good position of x numbers
+        for(int x = minX; x<=maxX;x++){
+            System.out.print(abs(x) + " "); // x numbering
+        }
+        System.out.println();
+
         for (int y = maxY; y>=minY; y--){
+            System.out.print(abs(y) + " "); // y numbering
             for (int x = minX; x<=maxX; x++){
                 char c = '?';
                 Position pos = new Position(x,y);
                 if (world.get(pos) != null){
                     c = world.get(pos).getDesc();
+                    if (pos.equals(actualPosition)){
+                        c = 'R';
+                    }
                 }
                 System.out.print(c + " ");
             }
@@ -196,18 +217,18 @@ public class WorldAgent extends ReactionAgent {
         }
     }
 
-    private void addAheadCellToWorld(Content content){
+    protected void addAheadCellToWorld(Content content){
         Position newPosition = new Position(actualPosition.getX() + worldDirection.getDx(), actualPosition.getY() + worldDirection.getDy());
         if(world.get(newPosition) != Content.DOCK){
             world.put(newPosition, content);
         }
     };
 
-    private void updateActualPosition(){
+    protected void updateActualPosition(){
         actualPosition = new Position(actualPosition.getX()+worldDirection.getDx(), actualPosition.getY() + worldDirection.getDy());
     }
 
-    private Action turnRight(){
+    protected Action turnRight(){
         switch (worldDirection){
             case N: worldDirection = WorldDirection.E; break;
             case S: worldDirection = WorldDirection.W; break;
@@ -218,7 +239,7 @@ public class WorldAgent extends ReactionAgent {
         return Action.TURN_RIGHT;
     }
 
-    private Action turnLeft(){
+    protected Action turnLeft(){
         switch (worldDirection){
             case N: worldDirection = WorldDirection.W; break;
             case S: worldDirection = WorldDirection.E; break;
@@ -230,7 +251,7 @@ public class WorldAgent extends ReactionAgent {
 
     }
 
-    private Action forward(){
+    protected Action forward(){
         actionList.append("F");
         addAheadCellToWorld(Content.VISITED);
         updateActualPosition();
@@ -238,7 +259,7 @@ public class WorldAgent extends ReactionAgent {
     }
 
     @SuppressWarnings("Duplicates")
-    private Action findRotationWithFreeCell(){ // check if there is better way to go -- i.e. if I face way which I have already gone
+    protected Action findRotationWithFreeCell(){ // check if there is better way to go -- i.e. if I face way which I have already gone
         Position pos;
         Content c;
         WorldDirection dir = null;
@@ -270,17 +291,205 @@ public class WorldAgent extends ReactionAgent {
         return forward();
     }
 
-    private Content getContentAhead(){
+    protected Content getContentAhead(){
         Position posAhead = new Position(actualPosition.getX()+worldDirection.getDx(), actualPosition.getY()+worldDirection.getDy());
         return world.get(posAhead);
     }
 
+    // position dest is always position of dock
+    protected void AStarFindWay(Position src, Position dest){
 
-    // position B is always position of dock
-    private StringBuilder findWayFromAtoB(Position A, Position B){
-        //TODO A*
+        //ArrayList<Position> path = new ArrayList<>();
+
+        Set<Position> explored = new HashSet<>();
+
+        PriorityQueue<Position> queue = new PriorityQueue<>(world.size(), new Comparator<Position>() {
+            @Override
+            public int compare(Position p1, Position p2) {
+                //double fScoreP1 = calculateHScore(p1,dest) + calculateGScore(p1,dest); // dest nebo A?
+                //double fScoreP2 = calculateHScore(p2,dest) + calculateGScore(p2,dest); // dest nebo A?
+
+                double fScoreP1 = p1.getfScore();
+                double fScoreP2 = p2.getfScore();
+                if(fScoreP1>fScoreP2){
+                    return 1;
+                }else if (fScoreP1<fScoreP2){
+                    return -1;
+                }else{
+                    return 0;
+                }
+            }
+        });
+
+        //novinka
+        initFScore();
+        calculateHScore(dest);
+
+        queue.add(src);
+        double gScore = 0;
+        boolean found = false;
+
+        while ((!queue.isEmpty()) && (!found)){
+
+            Position current = queue.poll(); //lowest fscore Position
+            explored.add(current);
+
+            if (current.equals(dest)){
+                found = true;
+            }
+
+            for(Position child : findNeighbors(current)){
+                double tempGScore = gScore +1;
+                double tempFScore = tempGScore + child.gethScore();
+                if ((explored.contains(child)) && (tempFScore >= child.getfScore())){
+                    continue;
+                }else if (!queue.contains(child) || (tempFScore < child.getfScore())){ //update child
+                    //path.add(child);
+                    child.setParent(current);
+                    child.setfScore(tempFScore);
+
+                    if (queue.contains(child)){
+                        queue.remove(child);
+                    }
+                    queue.add(child);
+                }
+
+
+            }
+            gScore++;
+        }
+        //return path;
     }
 
+    protected void calculateHScore(Position dest){
 
-    //TODO A* algorithm (from somewhere to somewhere with world available
+        for (Position pos : world.keySet()){
+            pos.sethScore(sqrt(pow(dest.getX()-pos.getX(), 2) + pow(dest.getY()-pos.getY(), 2)));
+            pos.setParent(null);
+        }
+
+        //return sqrt(abs(A.getX()-B.getX()) + abs(A.getY()-B.getY()));
+
+
+    //private double calculateGScore(Position A, Position B){
+    //   // asi neco s findNeighbors
+    //}
+    }
+    protected void initFScore(){
+        for (Position pos : world.keySet()){
+            pos.setfScore(0);
+        }
+    }
+
+    protected Set<Position> findNeighbors(Position x){
+        Set<Position> returningSet = new HashSet<>();
+        for (Position pos : world.keySet()){
+            if ((!pos.equals(x)) && (world.get(pos) != Content.WALL)){
+                if (
+                        ((x.getX() == (pos.getX()+1)) && (x.getY() == pos.getY())) ||
+                        ((x.getX() == (pos.getX()-1)) && (x.getY() == pos.getY())) ||
+                        ((x.getY() == (pos.getY()+1)) && (x.getX() == pos.getX())) ||
+                        ((x.getY() == (pos.getY()-1)) && (x.getX() == pos.getX()))
+                ){
+                    returningSet.add(pos);
+                }
+            }
+        }
+        return returningSet;
+    }
+
+    protected ArrayList<Position> getPathAsPositionArray(Position dest){
+        ArrayList<Position> path = new ArrayList<>();
+
+        for(Position pos = dest; pos!=null; pos = pos.getParent()){
+            path.add(pos);
+        }
+        Collections.reverse(path);
+        return path;
+    }
+
+    // the result is StringBuilder, which has first steps from end to beginning
+    protected StringBuilder makeMovesFromAToB(Position src, Position dest) { //just moves without correct rotation of robot
+        StringBuilder moves = new StringBuilder();
+        AStarFindWay(src, dest); // it fills up parents in Positions
+        Position currPos;
+        Position nextPos;
+        WorldDirection currPosWorldDirection = getWDToNeighbor(dest, dest.getParent()); //set WD accordng to his parents WD
+        WorldDirection nextPosWorldDirection;
+        for(currPos = dest; currPos!=null; currPos = currPos.getParent()){
+            nextPos = currPos.getParent();
+
+            if(nextPos == null){break;}
+
+            nextPosWorldDirection = getWDToNeighbor(currPos, nextPos);
+
+            if (currPosWorldDirection == nextPosWorldDirection){ //if it is in the same direction, go forward
+                moves.append("F");
+            }else{ //its not in same direction, we need correct rotations
+                switch (nextPosWorldDirection){
+                    case N:
+                        switch (currPosWorldDirection){
+                            case E:moves.append("RF");break;
+                            case W:moves.append("LF");break;
+                            case S:moves.append("LLF");break;
+                        }
+                        break;
+
+                    case S:
+                        switch (currPosWorldDirection){
+                            case W:moves.append("RF");break;
+                            case E:moves.append("LF");break;
+                            case N:moves.append("LLF");break;
+                        }
+                        break;
+
+                    case W:
+                        switch (currPosWorldDirection){
+                            case N:moves.append("RF");break;
+                            case S:moves.append("LF");break;
+                            case E:moves.append("LLF");break;
+                        }
+                        break;
+
+                    case E:
+                        switch (currPosWorldDirection){
+                            case S:moves.append("RF");break;
+                            case N:moves.append("LF");break;
+                            case W:moves.append("LLF");break;
+                        }
+                        break;
+                }
+                currPosWorldDirection = nextPosWorldDirection;
+            }
+        }
+        return moves;
+    }
+
+    //comparing two positions and returns world direction from start position to end position
+    protected WorldDirection getWDToNeighbor(Position from, Position to){
+        if (from == null || to == null || from.equals(to)){
+            return null;
+        }
+        int dx = from.getX() - to.getX();
+        int dy = from.getY() - to.getY();
+        switch (dx){
+            case 1: return WorldDirection.W;  // he is in the left from me
+            case -1: return WorldDirection.E; //he is in the right from me
+        }
+        switch (dy){
+            case 1: return WorldDirection.S; //he is down from me
+            case -1: return WorldDirection.N; // he is up from me
+        }
+        return null;
+    }
+
+    protected Position getDock(){
+        for(Position pos : world.keySet()){
+            if (pos.getX() == 0 && pos.getY() == 0){
+                return pos;
+            }
+        }
+        return null;
+    }
 }
+//TODO remove actionList
