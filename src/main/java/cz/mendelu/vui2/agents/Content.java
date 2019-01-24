@@ -5,7 +5,7 @@ package cz.mendelu.vui2.agents;
  */
 enum Content {
 
-    WALL('X'), DOCK('_'), VISITED('*'), FREE('0');
+    WALL('X'), DOCK('_'), VISITED('*'), FREE('0'), UNOBSERVED('□');
 
     char desc;
     Content(char c){
