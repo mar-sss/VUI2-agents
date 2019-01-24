@@ -150,11 +150,11 @@ public class ReactionAgent extends AbstractAgent {
                         return Action.FORWARD;
                     } else{ // I am trying to find first free cell
                         if (isFacingNorth){
-                            actionList.append("R");
-                            return Action.TURN_RIGHT;
-                        }else{
                             actionList.append("L");
                             return Action.TURN_LEFT;
+                        }else{
+                            actionList.append("R");
+                            return Action.TURN_RIGHT;
                         }
                     }
                 default: return Action.TURN_OFF; // this should not happen

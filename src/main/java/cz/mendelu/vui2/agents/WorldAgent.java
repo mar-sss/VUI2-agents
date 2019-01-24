@@ -158,9 +158,9 @@ public class WorldAgent extends ReactionAgent {
                     } else{ // I am trying to find first free cell
                         addAheadCellToWorld(Content.WALL);
                         if (isFacingNorth){
-                            return turnRight();
-                        }else{
                             return turnLeft();
+                        }else{
+                            return turnRight();
                         }
                     }
                 default: return Action.TURN_OFF; // this should not happen
