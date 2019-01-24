@@ -8,7 +8,6 @@ public class BenefitAgent extends GoalAgent {
     @SuppressWarnings("Duplicates")
     public Action doAction(boolean canMove, boolean dirty, boolean dock) {
         printWorld();
-        System.out.println("NUMBER OF STEPS: " + numberOfSteps);
         canMove = !canMove;
         if (!goBack && !dock){// If I am going already back or I am in dock, no needed for home path cost calculation
             //calculate cost to home

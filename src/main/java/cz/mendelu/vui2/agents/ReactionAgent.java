@@ -27,6 +27,7 @@ public class ReactionAgent extends AbstractAgent {
         this.isFacingNorth = true;
     }
 
+    @SuppressWarnings("Duplicates")
     @Override
     public Action doAction(boolean canMove, boolean dirty, boolean dock) {
         if(canMove){ // just for better interpretation

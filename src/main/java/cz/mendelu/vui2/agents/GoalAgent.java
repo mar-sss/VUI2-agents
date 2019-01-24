@@ -22,9 +22,6 @@ public class GoalAgent extends WorldAgent {
 
     @SuppressWarnings("Duplicates")
     @Override
-
-
-
     public Action doAction(boolean canMove, boolean dirty, boolean dock) {
         printWorld();
         canMove = !canMove;
@@ -253,7 +250,7 @@ public class GoalAgent extends WorldAgent {
 
     }
 
-    private Position findZero() {
+    protected Position findZero() {
         for (Position pos : world.keySet()){
             if (world.get(pos) == Content.FREE){
                 return pos;
@@ -263,7 +260,7 @@ public class GoalAgent extends WorldAgent {
 
     }
 
-    private Position findUnobservedCell(){
+    protected Position findUnobservedCell(){
         int level = 1;
         int max = findMaxLevel();
         Position newPosition;
@@ -289,7 +286,7 @@ public class GoalAgent extends WorldAgent {
         return null;
     }
 
-    private int findMaxLevel(){
+    protected int findMaxLevel(){
         int max = 0;
         //getting minimum and maximum x, y
         for (Position pos: world.keySet()){
@@ -297,7 +294,7 @@ public class GoalAgent extends WorldAgent {
                 max = abs(pos.getX());
             }
             if (abs(pos.getY())>max){
-                max = pos.getY();
+                max = abs(pos.getY());
             }
         }
         return max;
@@ -335,17 +332,12 @@ public class GoalAgent extends WorldAgent {
         if(c == Content.FREE || c == null){ //if is it free or undiscovered
             return turnLeft();
         }
-        //there is no free cell, so
-
-        //Action returnedAction = super.findRotationWithFreeCell();
-        //if (returnedAction == Action.FORWARD){
-        //
-        //}
+        //there is no free cell, so I return null instead of forward as in previous agent - so I can start searching for undiscovered places
         return null;
 
     }
 
-    private Action goHome(){
+    protected Action goHome(){
         if (pathToHome.length() == 0){
             return Action.TURN_OFF;
         }
