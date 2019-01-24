@@ -74,11 +74,9 @@ public class WorldAgent extends ReactionAgent {
             char action = pathToHome.toString().charAt(pathToHome.length()-1);
             pathToHome.deleteCharAt(pathToHome.length()-1);
             switch (action){ //just make actions as are in pathToHome
-                case 'F':
-                    //updateActualPosition();
-                    return Action.FORWARD;
-                case 'R': return Action.TURN_RIGHT;
-                case 'L': return Action.TURN_LEFT;
+                case 'F': return forward();
+                case 'R': return turnRight();
+                case 'L': return turnLeft();
                 default: return Action.TURN_OFF;
             }
         }
@@ -196,19 +194,24 @@ public class WorldAgent extends ReactionAgent {
         }
         System.out.print("  "); // for good position of x numbers
         for(int x = minX; x<=maxX;x++){
-            System.out.print(abs(x) + " "); // x numbering
+            System.out.printf("%1d ", abs(x) % 10); // x numbering
         }
         System.out.println();
 
         for (int y = maxY; y>=minY; y--){
-            System.out.print(abs(y) + " "); // y numbering
+            System.out.printf("%2d ", abs(y)); // y numbering
             for (int x = minX; x<=maxX; x++){
                 char c = '?';
                 Position pos = new Position(x,y);
                 if (world.get(pos) != null){
                     c = world.get(pos).getDesc();
                     if (pos.equals(actualPosition)){
-                        c = 'R';
+                        switch (worldDirection){
+                            case E:c = '→';break;
+                            case N:c = '↑';break;
+                            case S:c = '↓';break;
+                            case W:c = '←';break;
+                        }
                     }
                 }
                 System.out.print(c + " ");
