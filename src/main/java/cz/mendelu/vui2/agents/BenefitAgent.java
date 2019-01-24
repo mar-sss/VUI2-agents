@@ -284,7 +284,7 @@ public class BenefitAgent extends GoalAgent {
         for (int i = minX-1; i<=maxX+1; i++){ //from min x to max x
             for (int j = minY-1; j<=maxY+1; j++){ //from min y to max y
                 pos = new Position(i,j);
-                if (world.get(pos) == null){//if position is not in world
+                if ((world.get(pos) == null) && hasCellReachableNeighbor(pos)){//if position is not in world and discover if it has reachable neighbor (because if not, it is not necessary to deal with it)
                     //calculate all paths to zeros
                     world.put(pos, Content.UNOBSERVED);
                     StringBuilder path = makeMovesFromAToB(actualPosition, pos);

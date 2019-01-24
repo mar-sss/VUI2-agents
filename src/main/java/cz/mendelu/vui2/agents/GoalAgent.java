@@ -1,6 +1,8 @@
 package cz.mendelu.vui2.agents;
 
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 
 import static java.lang.Math.abs;
 
@@ -271,7 +273,7 @@ public class GoalAgent extends WorldAgent {
             for (int i = -level; i<=level; i++){//y expansion from - to + level
                 for (int j = -level; j<=level; j++){//x expansion to the left
                     newPosition = new Position(actualPosition.getX()+j, actualPosition.getY()+i);
-                    if (world.get(newPosition) == null){
+                    if (world.get(newPosition) == null && hasCellReachableNeighbor(newPosition)){//if position is not in world and discover if it has reachable neighbor (because if not, it is not necessary to deal with it)
                         //I FOUND CELL THAT IS NOT IN WORLD -- find a road to it, if there is no road, try to find new
                         world.put(newPosition,Content.UNOBSERVED); //just for purposes of finding a way
                         path = makeMovesFromAToB(actualPosition, newPosition);
@@ -357,8 +359,20 @@ public class GoalAgent extends WorldAgent {
         }
     }
 
-    //TODO jakmile jsem ve stavu, kdy není jiná možnost, než jít po již projité cestě, tak najít pomoci A* cestu k první nalezené nule/neprozkoumane oblasti v hashmapě, pokud se najde, tak si cestu uložit do nějakého actionListu a provést je, poté pokračovat klasicky
+    // for position, look on the world if I can reach it somehow - it means if it has some neighbor which is FREE/VISITED
+    protected boolean hasCellReachableNeighbor(Position pos){
+        Set<Content> reachableContent = new HashSet<>();
+        reachableContent.add(Content.FREE);
+        reachableContent.add(Content.VISITED);
+        reachableContent.add(Content.DOCK);
+        Position north = new Position(pos.getX(),pos.getY()+1);
+        Position south = new Position(pos.getX(), pos.getY()-1);
+        Position east = new Position(pos.getX()+1, pos.getY());
+        Position west = new Position(pos.getX()-1, pos.getY());
 
-    // TODO benefit = pomocí A* najít cestu k NEJBLIZSI nule/neprozkoumane oblasti (nikoliv první nalezené), pokud se najde, tak si cestu uložit do nějakého actionListu a provést je, poté pokračovat klasicky
-    // - nejblizsi nulu. tak, ze budu postupne okolo actual pozice postupne zkouset pozice okolo a jakmile ji najdu (nulu nebo neprozkoumane misto), tak pocitam A* k ni
+        return  reachableContent.contains(world.get(north)) ||
+                reachableContent.contains(world.get(south)) ||
+                reachableContent.contains(world.get(east)) ||
+                reachableContent.contains(world.get(west));
+    }
 }
