@@ -6,11 +6,16 @@ import static java.lang.Math.abs;
 
 public class GoalAgent extends WorldAgent {
 
-    StringBuilder pathToFreeSpace;
+    protected StringBuilder pathToFreeSpace;
+
+    protected boolean tryNew;
+    protected boolean goingToSomePath;
 
     public GoalAgent() {
         super();
         pathToFreeSpace = new StringBuilder();
+        tryNew = false;
+        goingToSomePath = false;
     }
 
     @SuppressWarnings("Duplicates")
@@ -74,20 +79,37 @@ public class GoalAgent extends WorldAgent {
             return Action.CLEAN;
         }
 
-        if (pathToFreeSpace.length()>0){
-            System.out.println("Path to new free space: " + pathToFreeSpace);
-            char action = pathToFreeSpace.toString().charAt(pathToFreeSpace.length()-1);
-            pathToFreeSpace.deleteCharAt(pathToFreeSpace.length()-1);
-            switch (action) { //just make actions as are in pathToHome
-                case 'F': return forward();
-                case 'R': return turnRight();
-                case 'L': return turnLeft();
-                default:  return Action.TURN_OFF;
+        if (pathToFreeSpace.length()>0 || goingToSomePath){
+            if (canMove && pathToFreeSpace.length() == 0){//I am in front of it -- what is it?
+                addAheadCellToWorld(Content.VISITED);
+                goingToSomePath = false;
+                return forward();
+            }else if (!canMove && pathToFreeSpace.length() == 0){
+                addAheadCellToWorld(Content.WALL);
+                tryNew = true;
+            }else {
+                System.out.println("Path to new free space: " + pathToFreeSpace);
+                char action = pathToFreeSpace.toString().charAt(pathToFreeSpace.length() - 1);
+                pathToFreeSpace.deleteCharAt(pathToFreeSpace.length() - 1);
+                switch (action) { //just make actions as are in pathToHome
+                    case 'F': return forward();
+                    case 'R': return turnRight();
+                    case 'L': return turnLeft();
+                    default:  return Action.TURN_OFF;
+                }
             }
         }
 
-        if(canMove && numberOfSteps == 0){ // I can move, so I go forward
-            if(getContentAhead() == Content.VISITED || getContentAhead() == Content.DOCK){
+        //if (!canMove){ // I cant move and all neighbors are observed
+        //    addAheadCellToWorld(Content.WALL);
+        //    if (findRotationWithFreeCell() == null){
+        //        tryNew = true;
+        //    }
+        //}
+
+        if((canMove && numberOfSteps == 0) || tryNew){ // I can move, so I go forward
+            if(getContentAhead() == Content.VISITED || getContentAhead() == Content.DOCK || tryNew){
+                tryNew = false;
                 Action foundAction = findRotationWithFreeCell();
                 if (foundAction == null){ //there is no other free cell next to me, so I will try to find first FREE
                     Position pos = findZero(); //find FIRST free space in world (FREE = unvisited, but observed)
@@ -112,6 +134,7 @@ public class GoalAgent extends WorldAgent {
                         }
                         worldDirection = originWD; //I used worldDirection for calculation of rotations, but I dont want to change it
                         System.out.println("Path to new free space: " + pathToFreeSpace);
+                        goingToSomePath = true;
                         char action = pathToFreeSpace.toString().charAt(pathToFreeSpace.length()-1);
                         pathToFreeSpace.deleteCharAt(pathToFreeSpace.length()-1);
                         switch (action) { //just make actions as are in pathToFreeSpace
@@ -144,6 +167,7 @@ public class GoalAgent extends WorldAgent {
                             }
                             worldDirection = originWD; //I used worldDirection for calculation of rotations, but I dont want to change it
                             System.out.println("Path to new UNOBSERVED space: " + pathToFreeSpace);
+                            goingToSomePath = true;
                             char action = pathToFreeSpace.toString().charAt(pathToFreeSpace.length()-1);
                             pathToFreeSpace.deleteCharAt(0); //delete last FORWARD, because I don't know if it WALL or not!
                             world.remove(newPosition); //remove the new position as I don't know what is there!
